@@ -33,7 +33,7 @@ function fetchImages() {
           return false;
         }
         contador++;
-        createCgaracterContainer(character);
+        createCharacterContainer(character);
       });
     })
     .finally(() => {
@@ -44,11 +44,8 @@ function fetchImages() {
     });
 }
 
-function createCgaracterContainer(character) {
+function createCharacterContainer(character) {
   const imageContainerEl = document.createElement("div");
-  if (!character) {
-    console.log("xd");
-  }
   imageContainerEl.classList.add("image-container");
 
   const imageEl = document.createElement("img");
@@ -87,8 +84,6 @@ function createCgaracterContainer(character) {
   description.appendChild(descriptionBody);
 
   imageEl.src = character.image;
-  imageEl.dataset.id = character.id;
-  imageContainerEl.dataset.idContainer = character.id;
   imageContainerEl.appendChild(imageEl);
   imageContainerEl.appendChild(description);
   containerImages.appendChild(imageContainerEl);
@@ -99,6 +94,7 @@ fetchImages();
 random.addEventListener("click", (e) => {
   e.preventDefault();
   start = Math.ceil(Math.random() * 819);
+  history.pushState(null, "", `index.html?${start}`);
   fetchImages();
 });
 
@@ -125,11 +121,15 @@ search.addEventListener("input", function (e) {
         var { results } = response;
         results.forEach(function (response) {
           const resultsContainerEl = document.createElement("div");
-
+          resultsContainerEl.dataset.id = response.id;
           resultsContainerEl.classList.add("result-container");
 
           const imageResult = document.createElement("img");
           const descriptionResult = document.createElement("p");
+
+          descriptionResult.dataset.id = response.id;
+          imageResult.dataset.id = response.id;
+
           imageResult.src = response.image;
           origin = response.origin.name;
           if (origin != "unknown") {
@@ -158,4 +158,14 @@ share.addEventListener("click", () => {
     const messageContainer = share.querySelector("div");
     messageContainer.remove();
   }, 2000);
+});
+
+result.addEventListener("click", (e) => {
+  result.classList.add("opacity-0");
+  result.innerHTML = "";
+  search.value = "";
+  if (e.target.dataset.id) {
+    start = e.target.dataset.id;
+    fetchImages();
+  }
 });
