@@ -2,21 +2,29 @@ const search = document.querySelector(".inputSearch"),
   loader = document.querySelector(".loader"),
   container = document.querySelector(".container"),
   share = document.querySelector(".share"),
+  prev = document.querySelector(".prev"),
+  next = document.querySelector(".next"),
   random = document.querySelector(".random"),
   result = document.querySelector(".result"),
   containerImages = document.querySelector(".imagesContainer");
 (queryParams = new URLSearchParams(window.location.search)),
   (parameterGet = Object.fromEntries(queryParams.entries()));
 
-let start = parameterGet.start ? parameterGet.start : 1;
+let start = parameterGet.start ? Number(parameterGet.start) : 1,
+  max = 819;
+
+if (isNaN(start)) {
+  start = 1;
+}
 
 function fetchImages() {
+  history.pushState(null, "", `index.html?start=${start}`);
   container.classList.add("transition-0");
   container.classList.add("opacity-0");
   loader.classList.remove("opacity-0");
 
   let url = "https://rickandmortyapi.com/api/character/";
-  for (var i = start; i <= Number(start) + 12; i++) {
+  for (let i = start; i <= Number(start) + 12; i++) {
     url += i + ",";
   }
 
@@ -43,7 +51,11 @@ function fetchImages() {
       }, 2000);
     });
 }
-
+containerImages.addEventListener("mouseover", () => {
+  result.classList.add("opacity-0");
+  result.innerHTML = "";
+  containerImages.classList.remove("opacity-5");
+});
 function createCharacterContainer(character) {
   const imageContainerEl = document.createElement("div");
   imageContainerEl.classList.add("image-container");
@@ -91,19 +103,33 @@ function createCharacterContainer(character) {
 
 fetchImages();
 
-random.addEventListener("click", (e) => {
-  e.preventDefault();
-  start = Math.ceil(Math.random() * 819);
-  history.pushState(null, "", `index.html?${start}`);
+random.addEventListener("click", () => {
+  start = Math.ceil(Math.random() * max);
   fetchImages();
 });
 
-search.addEventListener("input", function (e) {
+prev.addEventListener("click", () => {
+  start = start <= 8 ? 1 : (start -= 8);
+  fetchImages();
+});
+
+next.addEventListener("click", () => {
+  start = start >= max - 8 ? max - 8 : (start += 8);
+
+  fetchImages();
+});
+
+function searchCharacterFor (e) {
   result.classList.add("opacity-0");
+  containerImages.classList.add("opacity-5");
+
   result.innerHTML = "";
 
-  let personaje = e.target.value;
-  if (!personaje) return false;
+  let personaje = search.value;
+  if (!personaje) {
+    containerImages.classList.remove("opacity-5");
+    return false;
+  }
 
   fetch("https://rickandmortyapi.com/api/character/?name=" + personaje)
     .then((response) => {
@@ -118,7 +144,9 @@ search.addEventListener("input", function (e) {
         messageError.classList.add("messageError");
         result.appendChild(messageError);
       } else {
-        var { results } = response;
+        let { results } = response;
+        let coincidences= "only one match was found";
+        let countcoincidences =0 ;
         results.forEach(function (response) {
           const resultsContainerEl = document.createElement("div");
           resultsContainerEl.dataset.id = response.id;
@@ -131,7 +159,7 @@ search.addEventListener("input", function (e) {
           imageResult.dataset.id = response.id;
 
           imageResult.src = response.image;
-          origin = response.origin.name;
+          origin = response.origin.name; 
           if (origin != "unknown") {
             origin = " Origin : " + origin;
           } else {
@@ -143,10 +171,23 @@ search.addEventListener("input", function (e) {
           resultsContainerEl.appendChild(descriptionResult);
 
           result.appendChild(resultsContainerEl);
+          countcoincidences++
         });
+        if(countcoincidences >1){
+          coincidences = `${countcoincidences} matches were found`
+        }
+        const text = document.createElement("p");
+        text.classList.add("coincidences");
+        text.textContent = coincidences;
+
+        result.appendChild(text)
       }
     });
-});
+}
+
+
+search.addEventListener("input", searchCharacterFor);
+search.addEventListener("mouseover", searchCharacterFor);
 
 share.addEventListener("click", () => {
   navigator.clipboard.writeText(window.location + `?start=${start}`);
@@ -161,10 +202,10 @@ share.addEventListener("click", () => {
 });
 
 result.addEventListener("click", (e) => {
-  result.classList.add("opacity-0");
-  result.innerHTML = "";
-  search.value = "";
   if (e.target.dataset.id) {
+    result.classList.add("opacity-0");
+    result.innerHTML = "";
+    search.value = "";
     start = e.target.dataset.id;
     fetchImages();
   }
